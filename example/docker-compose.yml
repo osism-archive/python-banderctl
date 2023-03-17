@@ -29,6 +29,8 @@ services:
       - "80"
       - "--root-path"
       - "/banderctl"
+    environment:
+      CONFIG_LOCATION: "/bandersnatch.conf"
   nginx:
     image: nginx:latest
     platform: linux/amd64

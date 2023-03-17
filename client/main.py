@@ -2,6 +2,7 @@ import os
 import requests
 import typer
 
+from rich.progress import track
 from typing import List, Optional
 
 app = typer.Typer(help="Client to manage banderctl")
@@ -12,16 +13,32 @@ settings = {"api_url": os.getenv("BANDERCTL_ENDPOINT", "http://localhost")}
 
 def perform_api_call(payload: dict):
     url = f"{settings['api_url']}/allowlist/packages"
-    result = requests.post(
-        url=url,
-        json=payload,
-        headers={
-            "accept": "application/json",
-            "Content-Type": "application/json"
-        }
-    )
-    print(url)
-    return result.text
+    for package in track(payload["packages"], description="Processing..."):
+        result = requests.post(
+            url=url,
+            json={
+                "mode": payload["mode"],
+                "packages": [package]
+            },
+            headers={
+                "accept": "application/json",
+                "Content-Type": "application/json"
+            }
+        )
+        print(f"{payload['mode']} {package}: {result.text}")
+
+    # The API is actually capable of handling all in just one call.
+    # But the progress bar is a benefit for the user in my opinion.
+    #result = requests.post(
+    #    url=url,
+    #    json=payload,
+    #    headers={
+    #        "accept": "application/json",
+    #        "Content-Type": "application/json"
+    #    }
+    #)
+    #print(url)
+    #return result.text
 
 
 @app.command("add")
@@ -39,7 +56,7 @@ def add(
         "mode": "add",
         "packages": packages
     }
-    print(perform_api_call(payload=payload))
+    perform_api_call(payload=payload)
 
 
 @app.command("delete")
@@ -57,7 +74,7 @@ def delete(
         "mode": "delete",
         "packages": packages
     }
-    print(perform_api_call(payload=payload))
+    perform_api_call(payload=payload)
 
 
 @app.command("version")
